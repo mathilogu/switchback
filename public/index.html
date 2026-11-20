@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Switchback</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#ECEEEA;--sf:#F8F9F6;--ink:#16252B;--ink2:#51626A;--ln:#CCD3CE;--ac:#0E6A73;--on:#fff;--warn:#A64B0B}
+@media(prefers-color-scheme:dark){:root{--bg:#0F1619;--sf:#172127;--ink:#E7EDEB;--ink2:#9CADB1;--ln:#2B393F;--ac:#74C6CD;--on:#08201F;--warn:#E39A5C}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px system-ui,sans-serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--ln)}
+h1{font-size:16px;letter-spacing:.14em;text-transform:uppercase;margin:0 auto 0 0}
+button,input,select,textarea{font:inherit;color:inherit}
+.tab,.ib{background:var(--sf);border:1px solid var(--ln);border-radius:99px;padding:6px 14px;cursor:pointer}
+.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+main{flex:1;min-height:0;position:relative}
+#plans{position:absolute;inset:0;overflow:auto;padding:8px 14px 90px}
+h2{font:600 12px system-ui;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin:18px 0 6px}
+.row{display:flex;gap:10px;align-items:center;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.row.past{opacity:.6}.row small{color:var(--ink2);display:block;margin-top:3px}
+.n,.pin .m{width:28px;height:28px;flex:none;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--ac);color:var(--on);display:grid;place-items:center}
+.n b,.pin .m b{transform:rotate(45deg);font-size:12px}
+.pin{background:none;border:0}.pin .m{width:32px;height:32px;border:2px solid #fff;box-shadow:0 0 0 4px rgba(255,255,255,.35),0 2px 8px #000}
+.warn{color:var(--warn);font-size:13px}
+#map{position:absolute;inset:0;display:none;background:#0B1215}
+#sb{position:absolute;z-index:500;top:8px;left:8px;right:8px;display:none}
+#sb div.r{display:flex;gap:6px}#sb .row{margin:4px 0}
+#msg{display:none;position:absolute;z-index:500;top:56px;left:8px;right:8px;background:var(--sf);padding:8px;border-radius:8px;font-size:13px}
+#fab{position:absolute;z-index:600;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0));width:52px;height:52px;border-radius:50%;border:0;background:var(--ac);color:var(--on);font-size:26px;cursor:pointer}
+#sheet{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);display:none;align-items:flex-end}
+#f{background:var(--sf);width:100%;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:12px;color:var(--ink2);display:flex;flex-direction:column;gap:3px}.w{grid-column:1/3}
+input,select,textarea{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:8px;width:100%}
+.act{display:flex;gap:8px;grid-column:1/3}.act button,.act label{flex:1;padding:10px;border-radius:8px;border:1px solid var(--ln);background:none;cursor:pointer;text-align:center;color:var(--ink);font-size:15px}
+.act .p{background:var(--ac);color:var(--on);border-color:var(--ac)}
+#st{grid-column:1/3;font-size:12px;color:var(--ink2);min-height:14px}
+.leaflet-popup-content button{margin-top:6px;padding:4px 10px}
+</style></head><body>
+<header><h1>Switchback</h1>
+<button class="tab on" data-v="plans">Plans</button><button class="tab" data-v="map">Map</button>
+<button class="ib" id="cl" title="Sync (long-press to reset passphrase)">☁</button><button class="ib" id="exp" title="Export backup">⇩</button><button class="ib" id="imp" title="Import">⇧</button>
+<input type="file" id="file" accept=".json" hidden></header>
+<main><div id="plans"></div><div id="map"></div>
+<div id="sb"><div class="r"><input id="q" placeholder="Search place…" style="flex:1"><button class="ib" id="go">Go</button><button class="ib" id="me" title="My location">◎</button><button class="ib" id="ln" title="Route line">┄</button></div><div id="res"></div></div>
+<div id="msg"></div><button id="fab">+</button></main>
+<div id="sheet"><form id="f">
+<label class="w">Trek name<input id="name" required></label>
+<label>Date<input id="date" type="date" required></label>
+<label>Difficulty<select id="diff"><option>Easy</option><option>Moderate</option><option>Hard</option><option>Extreme</option></select></label>
+<label class="w">Location (type, then leave field to find it)<input id="loc" placeholder="Region / trailhead"></label>
+<label>Latitude<input id="lat" type="number" step="any"></label>
+<label>Longitude<input id="lng" type="number" step="any"></label>
+<label>Max altitude (m)<input id="alt" type="number"></label>
+<label>Distance (km)<input id="dist" type="number" step="any"></label>
+<label>Days<input id="days" type="number" min="1"></label>
+<label>Elevation gain (m)<input id="gain" type="number"></label>
+<label class="w">Notes / permits / gear<textarea id="notes" rows="3"></textarea></label>
+<div id="st"></div>
+<div class="act"><button type="button" id="pick">Pick on map</button><label>Import GPX<input type="file" id="gpx" accept=".gpx" hidden></label></div>
+<div class="act"><button type="button" id="del">Delete</button><button type="button" id="cancel">Cancel</button><button class="p">Save</button></div>
+</form></div>
+<script>
+const $=id=>document.getElementById(id),MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const NUM=['lat','lng','alt','dist','days','gain'],F=['name','date','diff','loc','lat','lng','alt','dist','days','gain','notes'];
+let T=[],D={},cur=null,map,layer,line=false,picking=false,R=[],tmp,lastGeo=0;
+const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):localStorage.setItem(k,v)}catch(e){return null}};
+try{T=JSON.parse(ls('treks')||'[]')}catch(e){}
+try{D=JSON.parse(ls('del')||'{}')}catch(e){}
+const saveLocal=()=>{ls('treks',JSON.stringify(T));ls('del',JSON.stringify(D))};
+let pt;const save=()=>{saveLocal();clearTimeout(pt);pt=setTimeout(sync,1200)};
+function merge(r){const m=new Map();[...T,...(r.treks||[])].forEach(t=>{const o=m.get(t.id);if(!o||(t.mod||0)>(o.mod||0))m.set(t.id,t)});
+ const d={...(r.del||{}),...D};Object.keys(r.del||{}).forEach(k=>d[k]=Math.max(r.del[k],D[k]||0));
+ D=d;T=[...m.values()].filter(t=>!(D[t.id]>(t.mod||0)))}
+async function sync(){const p=ls('pass');if(!p)return;const b=$('cl');b.textContent='☁…';
+ try{const h={'x-pass':p};let r=await fetch('/api/treks',{headers:h});
+  if(r.status===401){ls('pass','');b.textContent='☁!';alert('Wrong passphrase. Tap ☁ to retry.');return}
+  if(!r.ok)throw 0;merge(await r.json());saveLocal();render();
+  r=await fetch('/api/treks',{method:'PUT',headers:{...h,'content-type':'application/json'},body:JSON.stringify({treks:T,del:D})});
+  if(!r.ok)throw 0;b.textContent='☁✓';ls('lastExport',Date.now())}catch(e){b.textContent='☁!'}}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const has=t=>t.lat!==''&&t.lat!=null&&t.lng!==''&&t.lng!=null;
+function render(){
+ T.sort((a,b)=>a.date.localeCompare(b.date));
+ const today=new Date().toISOString().slice(0,10);let h='',last='';
+ const lb=+ls('lastExport')||0,days=(Date.now()-lb)/864e5;
+ if(T.length&&(!lb||days>30))h+=`<p class="warn">Data is stored only in this browser. ${lb?'Last backup '+Math.floor(days)+' days ago.':'Not backed up yet.'} Tap ⇩ to export.</p>`;
+ T.forEach((t,i)=>{const d=new Date(t.date+'T00:00'),k=d.getFullYear()+'-'+d.getMonth();
+  if(k!==last){last=k;h+=`<h2>${MN[d.getMonth()]} ${d.getFullYear()}</h2>`}
+  h+=`<div class="row ${t.date<today?'past':''}" data-id="${esc(t.id)}"><span class="n"><b>${i+1}</b></span><div><b>${esc(t.name)}</b><small>${t.date} · ${esc(t.loc||'')} ${t.alt?'· '+t.alt+' m':''} ${t.dist?'· '+t.dist+' km':''} ${t.days?'· '+t.days+'d':''} · ${t.diff}${has(t)?'':' · no pin'}</small></div></div>`});
+ $('plans').innerHTML=h||'<p style="color:var(--ink2);margin-top:30px">No treks yet. Tap + to add one.</p>';
+ drawMap()}
+function drawMap(fit){
+ if(!map)return;layer.clearLayers();const all=T.filter(has),pts=all.map(t=>[t.lat,t.lng]);
+ if(line&&pts.length>1)L.polyline(pts,{color:'#fff',weight:2,dashArray:'4 6',opacity:.8}).addTo(layer);
+ all.forEach(t=>{const n=T.indexOf(t)+1;
+  const ic=L.divIcon({className:'pin',iconSize:[32,32],iconAnchor:[16,32],html:`<div class="m"><b>${n}</b></div>`});
+  L.marker([t.lat,t.lng],{icon:ic}).addTo(layer).bindPopup(`<b>#${n} ${esc(t.name)}</b><br>${t.date}<br>${t.alt?t.alt+' m':''}<br><button onclick="edit('${esc(t.id)}')">Edit</button>`)});
+ if(fit&&pts.length)map.fitBounds(pts,{maxZoom:11,padding:[50,50]})}
+function initMap(){
+ if(map)return;map=L.map('map').setView([11,78.5],7);
+ const E='https://server.arcgisonline.com/ArcGIS/rest/services/',o={maxNativeZoom:17,maxZoom:19};
+ const sat=L.tileLayer(E+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{...o,attribution:'Esri'}),
+  lab=L.tileLayer(E+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',o),
+  ter=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxNativeZoom:17,maxZoom:19,attribution:'OpenTopoMap'}),
+  str=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'OSM'});
+ sat.addTo(map).on('tileerror',()=>{$('msg').style.display='block';$('msg').textContent='Tiles not loading. Check internet.'});
+ L.control.layers({Satellite:sat,Terrain:ter,Streets:str},{Labels:lab},{position:'bottomleft'}).addTo(map);
+ layer=L.layerGroup().addTo(map);
+ map.on('click',e=>{const a=+e.latlng.lat.toFixed(5),b=+e.latlng.lng.toFixed(5);
+  if(picking){picking=false;$('lat').value=a;$('lng').value=b;show('plans');$('sheet').style.display='flex';auto()}else drop(a,b)});
+ $('go').onclick=search;$('q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();search()}};
+ $('me').onclick=()=>map.locate({setView:true,maxZoom:14});
+ map.on('locationfound',e=>drop(+e.latlng.lat.toFixed(5),+e.latlng.lng.toFixed(5),'You are here'));
+ map.on('locationerror',()=>{$('msg').style.display='block';$('msg').textContent='Location unavailable. Allow location access.'});
+ $('res').onclick=e=>{const r=e.target.closest('.row');if(!r||r.dataset.i==null)return;const x=R[r.dataset.i];map.setView([x.lat,x.lon],12);drop(+(+x.lat).toFixed(5),+(+x.lon).toFixed(5),esc(x.display_name.split(',')[0]));$('res').innerHTML=''};
+ $('ln').onclick=()=>{line=!line;$('ln').classList.toggle('on',line);drawMap()}}
+function drop(a,b,l){if(tmp)tmp.remove();tmp=L.marker([a,b]).addTo(map).bindPopup(`${l||'Selected'}<br>${a}, ${b}<br><button onclick="newAt(${a},${b})">Add trek here</button>`).openPopup()}
+function newAt(a,b){edit();$('lat').value=a;$('lng').value=b;show('plans');auto()}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function getJ(u){await wait(Math.max(0,1100-(Date.now()-lastGeo)));lastGeo=Date.now();const c=new AbortController(),t=setTimeout(()=>c.abort(),7000);
+ try{return await(await fetch(u,{signal:c.signal})).json()}finally{clearTimeout(t)}}
+async function search(){const q=$('q').value.trim();if(!q)return;$('res').innerHTML='<div class="row">Searching…</div>';
+ try{R=await getJ('https://nominatim.openstreetmap.org/search?format=json&limit=5&q='+encodeURIComponent(q));
+  $('res').innerHTML=R.length?R.map((x,i)=>`<div class="row" data-i="${i}">${esc(x.display_name)}</div>`).join(''):'<div class="row">No results</div>'}
+ catch(x){$('res').innerHTML='<div class="row">Search failed. Try again.</div>'}}
+const can=k=>!$(k).value||$(k).dataset.auto,put=(k,v)=>{$(k).value=v;$(k).dataset.auto=1};
+async function auto(){const la=$('lat').value,ln=$('lng').value;if(la===''||ln==='')return;
+ $('st').textContent='Fetching details…';let bad=0;
+ try{const j=await getJ(`https://api.open-meteo.com/v1/elevation?latitude=${la}&longitude=${ln}`);if(j.elevation&&can('alt'))put('alt',Math.round(j.elevation[0]))}catch(e){bad=1}
+ try{const j=await getJ(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${la}&lon=${ln}`),a=j.address||{};
+  const p=[a.village||a.town||a.city||a.county||a.hamlet,a.state,a.country].filter(Boolean).join(', ');
+  if(p){if(can('loc'))put('loc',p);if(can('name'))put('name',p.split(',')[0]+' Trek')}}catch(e){bad=1}
+ $('st').textContent=bad?'Some details could not be fetched. Enter them manually.':''}
+async function geo(){const q=$('loc').value.trim();if(!q||$('lat').value!=='')return;$('st').textContent='Finding location…';
+ try{const j=await getJ('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
+  if(j[0]){$('lat').value=(+j[0].lat).toFixed(5);$('lng').value=(+j[0].lon).toFixed(5);auto()}else $('st').textContent='Location not found.'}
+ catch(x){$('st').textContent='Search failed. Enter coordinates manually.'}}
+$('loc').onchange=geo;$('lat').onchange=$('lng').onchange=auto;
+F.forEach(k=>$(k).addEventListener('input',()=>delete $(k).dataset.auto));
+function show(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+ $('plans').style.display=v==='plans'?'block':'none';$('map').style.display=v==='map'?'block':'none';$('sb').style.display=v==='map'?'block':'none';$('fab').style.display=v==='plans'?'block':'none';
+ if(v==='map'){if(!window.L){$('msg').style.display='block';$('msg').textContent='Map library failed to load. Check internet.';return}
+  initMap();setTimeout(()=>{map.invalidateSize();drawMap(true)},50)}}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
+function edit(id){cur=T.find(t=>t.id===id)||{id:Date.now()+'',date:new Date().toISOString().slice(0,10),diff:'Moderate'};
+ F.forEach(k=>{$(k).value=cur[k]??'';delete $(k).dataset.auto});$('st').textContent='';$('del').style.display=T.includes(cur)?'':'none';$('sheet').style.display='flex'}
+const closeSheet=()=>$('sheet').style.display='none';
+$('fab').onclick=()=>edit();
+$('plans').onclick=e=>{const r=e.target.closest('.row');if(r)edit(r.dataset.id)};
+$('cancel').onclick=closeSheet;$('sheet').onclick=e=>{if(e.target===$('sheet'))closeSheet()};
+document.onkeydown=e=>{if(e.key==='Escape')closeSheet()};
+$('del').onclick=()=>{if(confirm('Delete this trek?')){D[cur.id]=Date.now();T=T.filter(t=>t!==cur);save();render();closeSheet()}};
+$('pick').onclick=()=>{picking=true;closeSheet();show('map');$('msg').style.display='block';$('msg').textContent='Tap the map to pick the trek location.'};
+$('f').onsubmit=e=>{e.preventDefault();F.forEach(k=>{const v=$(k).value;cur[k]=NUM.includes(k)&&v!==''?+v:v});
+ cur.mod=Date.now();if(!T.includes(cur))T.push(cur);save();render();closeSheet()};
+const hav=(a,b)=>{const r=Math.PI/180,x=(b.a-a.a)*r,y=(b.o-a.o)*r,h=Math.sin(x/2)**2+Math.cos(a.a*r)*Math.cos(b.a*r)*Math.sin(y/2)**2;return 12742*Math.asin(Math.sqrt(h))};
+$('gpx').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+ const d=new DOMParser().parseFromString(await f.text(),'text/xml');
+ const p=[...d.querySelectorAll('trkpt,rtept')].map(x=>{const el=x.querySelector('ele');return{a:+x.getAttribute('lat'),o:+x.getAttribute('lon'),e:el?+el.textContent:null}});
+ if(p.length<2){$('st').textContent='No track found in GPX.';return}
+ let dist=0,gain=0,mx=-1e9,ref=null;
+ for(let i=1;i<p.length;i++)dist+=hav(p[i-1],p[i]);
+ p.forEach(x=>{if(x.e==null)return;mx=Math.max(mx,x.e);if(ref==null)ref=x.e;else if(x.e>ref+5){gain+=x.e-ref;ref=x.e}else if(x.e<ref)ref=x.e});
+ $('lat').value=p[0].a.toFixed(5);$('lng').value=p[0].o.toFixed(5);$('dist').value=dist.toFixed(1);
+ if(mx>-1e9){$('alt').value=Math.round(mx);$('gain').value=Math.round(gain)}
+ const n=d.querySelector('trk>name,metadata>name');if(n&&!$('name').value)$('name').value=n.textContent.trim();
+ $('st').textContent='GPX imported: distance, gain and altitude set.';auto()};
+$('exp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(T,null,1)],{type:'application/json'}));a.download='treks.json';a.click();ls('lastExport',Date.now());render()};
+$('imp').onclick=()=>$('file').click();
+$('file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+ try{const j=JSON.parse(await f.text());if(!Array.isArray(j)||j.some(t=>!t||!t.name||!/^\d{4}-\d{2}-\d{2}$/.test(t.date)))throw 0;
+  if(!confirm(`Import ${j.length} treks? Matching ones are overwritten, others are kept.`))return;
+  j.forEach(t=>{t.id=String(t.id||Date.now()+Math.random());t.mod=Date.now();const i=T.findIndex(x=>x.id===t.id);i<0?T.push(t):T[i]=t});save();render()}
+ catch(x){alert('Invalid trek file.')}};
+$('cl').onclick=()=>{if(!ls('pass')){const p=prompt('Sync passphrase (same on every device)');if(!p)return;ls('pass',p)}sync()};
+$('cl').oncontextmenu=e=>{e.preventDefault();ls('pass','');alert('Passphrase cleared. Tap ☁ to set a new one.')};
+render();sync();
+</script></body></html>
