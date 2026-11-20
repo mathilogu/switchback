@@ -3,128 +3,178 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Switchback</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{--bg:#ECEEEA;--sf:#F8F9F6;--ink:#16252B;--ink2:#51626A;--ln:#CCD3CE;--ac:#0E6A73;--on:#fff;--warn:#A64B0B}
-@media(prefers-color-scheme:dark){:root{--bg:#0F1619;--sf:#172127;--ink:#E7EDEB;--ink2:#9CADB1;--ln:#2B393F;--ac:#74C6CD;--on:#08201F;--warn:#E39A5C}}
-*{box-sizing:border-box}html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font:15px system-ui,sans-serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+:root{--bg:#ECEEEA;--sf:#F8F9F6;--ink:#16252B;--ink2:#5B6B72;--ln:#D5DBD6;--ac:#0E6A73;--on:#fff;--sh:0 6px 24px rgba(14,30,36,.16);--fb:'Schibsted Grotesk',system-ui,sans-serif;--fm:'IBM Plex Mono',ui-monospace,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#0F1619;--sf:#172127;--ink:#E7EDEB;--ink2:#9CADB1;--ln:#2B393F;--ac:#74C6CD;--on:#08201F;--sh:0 6px 24px rgba(0,0,0,.5)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px var(--fb);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--ln)}
-h1{font-size:16px;letter-spacing:.14em;text-transform:uppercase;margin:0 auto 0 0}
-button,input,select,textarea{font:inherit;color:inherit}
-.tab,.ib{background:var(--sf);border:1px solid var(--ln);border-radius:99px;padding:6px 14px;cursor:pointer}
-.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.brand{display:flex;align-items:center;gap:7px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;font-size:14px;margin-right:auto}.brand .i{color:var(--ac);width:22px;height:22px}
+.seg{display:flex;background:var(--sf);border:1px solid var(--ln);border-radius:99px;padding:3px}
+.seg button{border:0;background:none;border-radius:99px;padding:6px 14px;font-weight:500;color:var(--ink2)}
+.seg .on{background:var(--ac);color:var(--on)}
+.ic{width:38px;height:38px;border-radius:50%;border:1px solid var(--ln);background:var(--sf);display:grid;place-items:center;position:relative;color:var(--ink)}
+.ic.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+#cl::after{content:'';position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:transparent;border:1.5px solid var(--sf)}
+#cl[data-s=ok]::after{background:#3F9B6B}#cl[data-s=err]::after{background:#D9702E}#cl[data-s=busy]::after{background:var(--ac);animation:p 1s infinite}
+@keyframes p{50%{opacity:.25}}
+#menu{position:absolute;z-index:1500;top:56px;right:14px;background:var(--sf);border:1px solid var(--ln);border-radius:14px;box-shadow:var(--sh);padding:6px;display:none}
+#menu button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;padding:11px 14px;border-radius:10px;text-align:left}
+#menu button:active{background:var(--bg)}
 main{flex:1;min-height:0;position:relative}
-#plans{position:absolute;inset:0;overflow:auto;padding:8px 14px 90px}
-h2{font:600 12px system-ui;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin:18px 0 6px}
-.row{display:flex;gap:10px;align-items:center;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
-.row.past{opacity:.6}.row small{color:var(--ink2);display:block;margin-top:3px}
-.n,.pin .m{width:28px;height:28px;flex:none;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--ac);color:var(--on);display:grid;place-items:center}
-.n b,.pin .m b{transform:rotate(45deg);font-size:12px}
-.pin{background:none;border:0}.pin .m{width:32px;height:32px;border:2px solid #fff;box-shadow:0 0 0 4px rgba(255,255,255,.35),0 2px 8px #000}
-.warn{color:var(--warn);font-size:13px}
+#plans{position:absolute;inset:0;overflow:auto;padding:6px 14px 100px}
+h2{font:600 11px var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin:20px 2px 8px}
+.card{display:flex;gap:12px;align-items:flex-start;background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:12px;margin-bottom:10px}
+.card.past{opacity:.62}.card .mid{min-width:0}.card b{font-weight:600;font-size:16px}
+.sub{color:var(--ink2);font-size:13px;margin:2px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.c{font:500 12px var(--fm);border:1px solid var(--ln);border-radius:99px;padding:3px 9px;display:inline-flex;gap:6px;align-items:center}
+.c.f{opacity:.55}.dot{width:8px;height:8px;border-radius:50%}
+.note{display:flex;gap:10px;align-items:center;border:1px dashed var(--ln);border-radius:14px;padding:10px 12px;color:var(--ink2);font-size:13px;margin:8px 0}
+.empty{text-align:center;color:var(--ink2);margin-top:70px}.empty svg{width:150px;color:var(--ac)}.empty h3{color:var(--ink);margin:14px 0 4px}
 #map{position:absolute;inset:0;display:none;background:#0B1215}
-#sb{position:absolute;z-index:500;top:8px;left:8px;right:8px;display:none}
-#sb div.r{display:flex;gap:6px}#sb .row{margin:4px 0}
-#msg{display:none;position:absolute;z-index:500;top:56px;left:8px;right:8px;background:var(--sf);padding:8px;border-radius:8px;font-size:13px}
-#fab{position:absolute;z-index:600;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0));width:52px;height:52px;border-radius:50%;border:0;background:var(--ac);color:var(--on);font-size:26px;cursor:pointer}
+#sb{position:absolute;z-index:500;top:10px;left:10px;right:10px;display:none}
+.bar{display:flex;align-items:center;gap:4px;background:var(--sf);border-radius:16px;box-shadow:var(--sh);padding:4px 4px 4px 12px}
+.bar input{flex:1;border:0;background:none;outline:0;padding:8px 4px;min-width:0}
+.bar .ic{border:0;width:36px;height:36px;background:none}
+#res{margin-top:6px;background:var(--sf);border-radius:14px;box-shadow:var(--sh);overflow:hidden}
+#res:empty{display:none}.hit{padding:11px 14px;border-bottom:1px solid var(--ln);font-size:14px;cursor:pointer}.hit:last-child{border:0}
+#fab{position:absolute;z-index:600;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0));height:54px;padding:0 20px 0 16px;border-radius:27px;border:0;background:var(--ac);color:var(--on);display:flex;gap:8px;align-items:center;font-weight:600;box-shadow:var(--sh)}
+#toast{position:fixed;z-index:3000;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;max-width:90%;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
 #sheet{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);display:none;align-items:flex-end}
-#f{background:var(--sf);width:100%;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-label{font-size:12px;color:var(--ink2);display:flex;flex-direction:column;gap:3px}.w{grid-column:1/3}
-input,select,textarea{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:8px;width:100%}
-.act{display:flex;gap:8px;grid-column:1/3}.act button,.act label{flex:1;padding:10px;border-radius:8px;border:1px solid var(--ln);background:none;cursor:pointer;text-align:center;color:var(--ink);font-size:15px}
-.act .p{background:var(--ac);color:var(--on);border-color:var(--ac)}
+#f{background:var(--sf);width:100%;max-height:92%;overflow:auto;border-radius:22px 22px 0 0;padding:8px 16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;animation:up .25s}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.grab{grid-column:1/3;width:40px;height:4px;border-radius:2px;background:var(--ln);margin:4px auto 2px}
+#f h3{grid-column:1/3;margin:6px 0 -4px;font:600 11px var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+label{font-size:12px;color:var(--ink2);display:flex;flex-direction:column;gap:4px}.w{grid-column:1/3}
+input,select,textarea{background:var(--bg);border:1px solid var(--ln);border-radius:12px;padding:12px;width:100%;min-height:46px;font-size:15px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offset:-1px}
 #st{grid-column:1/3;font-size:12px;color:var(--ink2);min-height:14px}
-.leaflet-popup-content button{margin-top:6px;padding:4px 10px}
+.act{display:flex;gap:10px;grid-column:1/3}.act button,.act label{flex:1;min-height:48px;border-radius:12px;border:1px solid var(--ln);background:none;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--ink);font-size:15px;cursor:pointer}
+.act .p{background:var(--ac);color:var(--on);border-color:var(--ac);font-weight:600}
+.pin{background:none;border:0}.pin svg{filter:drop-shadow(0 2px 5px rgba(0,0,0,.7))}
+.leaflet-control-layers,.leaflet-bar{border:0!important;border-radius:12px!important;box-shadow:var(--sh)!important;overflow:hidden}
+.leaflet-popup-content button{margin-top:6px;padding:6px 12px;border:0;border-radius:8px;background:#0E6A73;color:#fff}
 </style></head><body>
-<header><h1>Switchback</h1>
-<button class="tab on" data-v="plans">Plans</button><button class="tab" data-v="map">Map</button>
-<button class="ib" id="cl" title="Sync (long-press to reset passphrase)">☁</button><button class="ib" id="exp" title="Export backup">⇩</button><button class="ib" id="imp" title="Import">⇧</button>
-<input type="file" id="file" accept=".json" hidden></header>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="i-peak" viewBox="0 0 24 24"><path d="M3 19l6.5-11 4 6 2-3L21 19z"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M6.5 18.5h10.5a3.5 3.5 0 0 0 .4-6.98A5.5 5.5 0 0 0 6.9 10.2a4.2 4.2 0 0 0-.4 8.3z"/></symbol>
+<symbol id="i-dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+<symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+<symbol id="i-route" viewBox="0 0 24 24"><path d="M4 18c4 0 3-6 8-6s4-6 8-6" stroke-dasharray="2 3"/><circle cx="4" cy="18" r="1.3"/><circle cx="20" cy="6" r="1.3"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M12 20V9m0 0l-4 4m4-4l4 4M5 4h14"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v4h4"/></symbol>
+</defs></svg>
+<header><div class="brand"><svg class="i"><use href="#i-peak"/></svg>Switchback</div>
+<div class="seg"><button class="tab on" data-v="plans">Plans</button><button class="tab" data-v="map">Map</button></div>
+<button class="ic" id="cl" title="Sync (long-press to reset passphrase)"><svg class="i"><use href="#i-cloud"/></svg></button>
+<button class="ic" id="mn" title="More"><svg class="i"><use href="#i-dots"/></svg></button></header>
+<div id="menu"><button id="exp"><svg class="i"><use href="#i-down"/></svg>Export backup</button><button id="imp"><svg class="i"><use href="#i-up"/></svg>Import backup</button></div>
+<input type="file" id="file" accept=".json" hidden>
 <main><div id="plans"></div><div id="map"></div>
-<div id="sb"><div class="r"><input id="q" placeholder="Search place…" style="flex:1"><button class="ib" id="go">Go</button><button class="ib" id="me" title="My location">◎</button><button class="ib" id="ln" title="Route line">┄</button></div><div id="res"></div></div>
-<div id="msg"></div><button id="fab">+</button></main>
-<div id="sheet"><form id="f">
+<div id="sb"><div class="bar"><button class="ic" id="go"><svg class="i"><use href="#i-search"/></svg></button><input id="q" placeholder="Search a place" enterkeyhint="search"><button class="ic" id="me" title="My location"><svg class="i"><use href="#i-locate"/></svg></button><button class="ic" id="ln" title="Route line"><svg class="i"><use href="#i-route"/></svg></button></div><div id="res"></div></div>
+<button id="fab"><svg class="i"><use href="#i-plus"/></svg>New trek</button></main>
+<div id="toast"></div>
+<div id="sheet"><form id="f"><div class="grab"></div>
+<h3>Basics</h3>
 <label class="w">Trek name<input id="name" required></label>
 <label>Date<input id="date" type="date" required></label>
 <label>Difficulty<select id="diff"><option>Easy</option><option>Moderate</option><option>Hard</option><option>Extreme</option></select></label>
-<label class="w">Location (type, then leave field to find it)<input id="loc" placeholder="Region / trailhead"></label>
+<h3>Location</h3>
+<label class="w">Place (type, then leave the field to find it)<input id="loc" placeholder="Region or trailhead"></label>
 <label>Latitude<input id="lat" type="number" step="any"></label>
 <label>Longitude<input id="lng" type="number" step="any"></label>
+<h3>Stats</h3>
 <label>Max altitude (m)<input id="alt" type="number"></label>
 <label>Distance (km)<input id="dist" type="number" step="any"></label>
 <label>Days<input id="days" type="number" min="1"></label>
 <label>Elevation gain (m)<input id="gain" type="number"></label>
-<label class="w">Notes / permits / gear<textarea id="notes" rows="3"></textarea></label>
+<h3>Notes</h3>
+<label class="w"><textarea id="notes" rows="3" placeholder="Permits, gear, contacts"></textarea></label>
 <div id="st"></div>
-<div class="act"><button type="button" id="pick">Pick on map</button><label>Import GPX<input type="file" id="gpx" accept=".gpx" hidden></label></div>
+<div class="act"><button type="button" id="pick"><svg class="i"><use href="#i-locate"/></svg>Pick on map</button><label><svg class="i"><use href="#i-file"/></svg>Import GPX<input type="file" id="gpx" accept=".gpx" hidden></label></div>
 <div class="act"><button type="button" id="del">Delete</button><button type="button" id="cancel">Cancel</button><button class="p">Save</button></div>
 </form></div>
 <script>
 const $=id=>document.getElementById(id),MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const NUM=['lat','lng','alt','dist','days','gain'],F=['name','date','diff','loc','lat','lng','alt','dist','days','gain','notes'];
-let T=[],D={},cur=null,map,layer,line=false,picking=false,R=[],tmp,lastGeo=0;
+const DC={Easy:'#3F9B6B',Moderate:'#B7791F',Hard:'#D9702E',Extreme:'#C8453F'};
+let T=[],D={},cur=null,map,layer,line=false,picking=false,R=[],tmp,lastGeo=0,tt;
 const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):localStorage.setItem(k,v)}catch(e){return null}};
 try{T=JSON.parse(ls('treks')||'[]')}catch(e){}
 try{D=JSON.parse(ls('del')||'{}')}catch(e){}
 const saveLocal=()=>{ls('treks',JSON.stringify(T));ls('del',JSON.stringify(D))};
 let pt;const save=()=>{saveLocal();clearTimeout(pt);pt=setTimeout(sync,1200)};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const has=t=>t.lat!==''&&t.lat!=null&&t.lng!==''&&t.lng!=null;
+function toast(m,ms=3500){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);if(ms)tt=setTimeout(()=>t.classList.remove('show'),ms)}
+const hideToast=()=>{clearTimeout(tt);$('toast').classList.remove('show')};
+const setSync=s=>$('cl').dataset.s=s;
+const peak=(n,c,z)=>`<svg width="${z}" height="${Math.round(z*1.06)}" viewBox="0 0 34 36"><path d="M17 3L31.5 33H2.5Z" fill="${c}" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><text x="17" y="29" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="${n>9?11:13}" fill="#fff">${n}</text></svg>`;
 function merge(r){const m=new Map();[...T,...(r.treks||[])].forEach(t=>{const o=m.get(t.id);if(!o||(t.mod||0)>(o.mod||0))m.set(t.id,t)});
  const d={...(r.del||{}),...D};Object.keys(r.del||{}).forEach(k=>d[k]=Math.max(r.del[k],D[k]||0));
  D=d;T=[...m.values()].filter(t=>!(D[t.id]>(t.mod||0)))}
-async function sync(){const p=ls('pass');if(!p)return;const b=$('cl');b.textContent='☁…';
+async function sync(){const p=ls('pass');if(!p)return;setSync('busy');
  try{const h={'x-pass':p};let r=await fetch('/api/treks',{headers:h});
-  if(r.status===401){ls('pass','');b.textContent='☁!';alert('Wrong passphrase. Tap ☁ to retry.');return}
+  if(r.status===401){ls('pass','');setSync('err');toast('Wrong passphrase. Tap the cloud to retry.');return}
   if(!r.ok)throw 0;merge(await r.json());saveLocal();render();
   r=await fetch('/api/treks',{method:'PUT',headers:{...h,'content-type':'application/json'},body:JSON.stringify({treks:T,del:D})});
-  if(!r.ok)throw 0;b.textContent='☁✓';ls('lastExport',Date.now())}catch(e){b.textContent='☁!'}}
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const has=t=>t.lat!==''&&t.lat!=null&&t.lng!==''&&t.lng!=null;
+  if(!r.ok)throw 0;setSync('ok');ls('lastExport',Date.now())}catch(e){setSync('err')}}
 function render(){
  T.sort((a,b)=>a.date.localeCompare(b.date));
  const today=new Date().toISOString().slice(0,10);let h='',last='';
- const lb=+ls('lastExport')||0,days=(Date.now()-lb)/864e5;
- if(T.length&&(!lb||days>30))h+=`<p class="warn">Data is stored only in this browser. ${lb?'Last backup '+Math.floor(days)+' days ago.':'Not backed up yet.'} Tap ⇩ to export.</p>`;
- T.forEach((t,i)=>{const d=new Date(t.date+'T00:00'),k=d.getFullYear()+'-'+d.getMonth();
+ const lb=+ls('lastExport')||0;
+ if(T.length&&!ls('pass')&&(!lb||(Date.now()-lb)/864e5>30))h+=`<div class="note"><svg class="i"><use href="#i-cloud"/></svg>Treks are saved only in this browser. Tap the cloud to sync across devices.</div>`;
+ T.forEach((t,i)=>{const d=new Date(t.date+'T00:00'),k=d.getFullYear()+'-'+d.getMonth(),c=DC[t.diff]||DC.Moderate;
   if(k!==last){last=k;h+=`<h2>${MN[d.getMonth()]} ${d.getFullYear()}</h2>`}
-  h+=`<div class="row ${t.date<today?'past':''}" data-id="${esc(t.id)}"><span class="n"><b>${i+1}</b></span><div><b>${esc(t.name)}</b><small>${t.date} · ${esc(t.loc||'')} ${t.alt?'· '+t.alt+' m':''} ${t.dist?'· '+t.dist+' km':''} ${t.days?'· '+t.days+'d':''} · ${t.diff}${has(t)?'':' · no pin'}</small></div></div>`});
- $('plans').innerHTML=h||'<p style="color:var(--ink2);margin-top:30px">No treks yet. Tap + to add one.</p>';
+  const ch=[t.alt?`<span class="c">${(+t.alt).toLocaleString()} m</span>`:'',t.dist?`<span class="c">${t.dist} km</span>`:'',t.days?`<span class="c">${t.days} d</span>`:'',t.gain?`<span class="c">+${(+t.gain).toLocaleString()} m</span>`:'',`<span class="c"><i class="dot" style="background:${c}"></i>${esc(t.diff||'')}</span>`,has(t)?'':'<span class="c f">no pin</span>'].join('');
+  h+=`<div class="card ${t.date<today?'past':''}" data-id="${esc(t.id)}">${peak(i+1,c,34)}<div class="mid"><b>${esc(t.name)}</b><div class="sub">${d.getDate()} ${MN[d.getMonth()]}${t.loc?' · '+esc(t.loc):''}</div><div class="chips">${ch}</div></div></div>`});
+ $('plans').innerHTML=h||`<div class="empty"><svg viewBox="0 0 160 90" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 82h148M18 82l34-50 18 24 14-18 52 44"/><path d="M52 32l-8 12 8-4 6 6"/><circle cx="124" cy="22" r="6"/></svg><h3>Plan your first trek</h3><div>Tap New trek to add dates, place and altitude.</div></div>`;
  drawMap()}
 function drawMap(fit){
  if(!map)return;layer.clearLayers();const all=T.filter(has),pts=all.map(t=>[t.lat,t.lng]);
- if(line&&pts.length>1)L.polyline(pts,{color:'#fff',weight:2,dashArray:'4 6',opacity:.8}).addTo(layer);
- all.forEach(t=>{const n=T.indexOf(t)+1;
-  const ic=L.divIcon({className:'pin',iconSize:[32,32],iconAnchor:[16,32],html:`<div class="m"><b>${n}</b></div>`});
-  L.marker([t.lat,t.lng],{icon:ic}).addTo(layer).bindPopup(`<b>#${n} ${esc(t.name)}</b><br>${t.date}<br>${t.alt?t.alt+' m':''}<br><button onclick="edit('${esc(t.id)}')">Edit</button>`)});
- if(fit&&pts.length)map.fitBounds(pts,{maxZoom:11,padding:[50,50]})}
+ if(line&&pts.length>1)L.polyline(pts,{color:'#fff',weight:2,dashArray:'4 6',opacity:.85}).addTo(layer);
+ all.forEach(t=>{const n=T.indexOf(t)+1,c=DC[t.diff]||DC.Moderate;
+  const ic=L.divIcon({className:'pin',iconSize:[38,40],iconAnchor:[19,37],html:peak(n,c,38)});
+  L.marker([t.lat,t.lng],{icon:ic}).addTo(layer).bindPopup(`<b>#${n} ${esc(t.name)}</b><br>${t.date}${t.alt?'<br>'+t.alt+' m':''}<br><button onclick="edit('${esc(t.id)}')">Edit</button>`)});
+ if(fit&&pts.length)map.fitBounds(pts,{maxZoom:11,padding:[60,60]})}
 function initMap(){
- if(map)return;map=L.map('map').setView([11,78.5],7);
+ if(map)return;map=L.map('map',{zoomControl:false}).setView([11,78.5],7);L.control.zoom({position:'bottomright'}).addTo(map);
  const E='https://server.arcgisonline.com/ArcGIS/rest/services/',o={maxNativeZoom:17,maxZoom:19};
  const sat=L.tileLayer(E+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{...o,attribution:'Esri'}),
   lab=L.tileLayer(E+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',o),
   ter=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxNativeZoom:17,maxZoom:19,attribution:'OpenTopoMap'}),
   str=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'OSM'});
- sat.addTo(map).on('tileerror',()=>{$('msg').style.display='block';$('msg').textContent='Tiles not loading. Check internet.'});
+ sat.addTo(map).on('tileerror',()=>toast('Tiles not loading. Check internet.'));
  L.control.layers({Satellite:sat,Terrain:ter,Streets:str},{Labels:lab},{position:'bottomleft'}).addTo(map);
  layer=L.layerGroup().addTo(map);
  map.on('click',e=>{const a=+e.latlng.lat.toFixed(5),b=+e.latlng.lng.toFixed(5);
-  if(picking){picking=false;$('lat').value=a;$('lng').value=b;show('plans');$('sheet').style.display='flex';auto()}else drop(a,b)});
+  if(picking){picking=false;hideToast();$('lat').value=a;$('lng').value=b;show('plans');$('sheet').style.display='flex';auto()}else drop(a,b)});
  $('go').onclick=search;$('q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();search()}};
  $('me').onclick=()=>map.locate({setView:true,maxZoom:14});
  map.on('locationfound',e=>drop(+e.latlng.lat.toFixed(5),+e.latlng.lng.toFixed(5),'You are here'));
- map.on('locationerror',()=>{$('msg').style.display='block';$('msg').textContent='Location unavailable. Allow location access.'});
- $('res').onclick=e=>{const r=e.target.closest('.row');if(!r||r.dataset.i==null)return;const x=R[r.dataset.i];map.setView([x.lat,x.lon],12);drop(+(+x.lat).toFixed(5),+(+x.lon).toFixed(5),esc(x.display_name.split(',')[0]));$('res').innerHTML=''};
+ map.on('locationerror',()=>toast('Location unavailable. Allow location access.'));
+ $('res').onclick=e=>{const r=e.target.closest('.hit');if(!r||r.dataset.i==null)return;const x=R[r.dataset.i];map.setView([x.lat,x.lon],12);drop(+(+x.lat).toFixed(5),+(+x.lon).toFixed(5),esc(x.display_name.split(',')[0]));$('res').innerHTML=''};
  $('ln').onclick=()=>{line=!line;$('ln').classList.toggle('on',line);drawMap()}}
 function drop(a,b,l){if(tmp)tmp.remove();tmp=L.marker([a,b]).addTo(map).bindPopup(`${l||'Selected'}<br>${a}, ${b}<br><button onclick="newAt(${a},${b})">Add trek here</button>`).openPopup()}
 function newAt(a,b){edit();$('lat').value=a;$('lng').value=b;show('plans');auto()}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function getJ(u){await wait(Math.max(0,1100-(Date.now()-lastGeo)));lastGeo=Date.now();const c=new AbortController(),t=setTimeout(()=>c.abort(),7000);
  try{return await(await fetch(u,{signal:c.signal})).json()}finally{clearTimeout(t)}}
-async function search(){const q=$('q').value.trim();if(!q)return;$('res').innerHTML='<div class="row">Searching…</div>';
+async function search(){const q=$('q').value.trim();if(!q)return;$('res').innerHTML='<div class="hit">Searching…</div>';
  try{R=await getJ('https://nominatim.openstreetmap.org/search?format=json&limit=5&q='+encodeURIComponent(q));
-  $('res').innerHTML=R.length?R.map((x,i)=>`<div class="row" data-i="${i}">${esc(x.display_name)}</div>`).join(''):'<div class="row">No results</div>'}
- catch(x){$('res').innerHTML='<div class="row">Search failed. Try again.</div>'}}
+  $('res').innerHTML=R.length?R.map((x,i)=>`<div class="hit" data-i="${i}">${esc(x.display_name)}</div>`).join(''):'<div class="hit">No results</div>'}
+ catch(x){$('res').innerHTML='<div class="hit">Search failed. Try again.</div>'}}
 const can=k=>!$(k).value||$(k).dataset.auto,put=(k,v)=>{$(k).value=v;$(k).dataset.auto=1};
 async function auto(){const la=$('lat').value,ln=$('lng').value;if(la===''||ln==='')return;
  $('st').textContent='Fetching details…';let bad=0;
@@ -140,19 +190,19 @@ async function geo(){const q=$('loc').value.trim();if(!q||$('lat').value!=='')re
 $('loc').onchange=geo;$('lat').onchange=$('lng').onchange=auto;
 F.forEach(k=>$(k).addEventListener('input',()=>delete $(k).dataset.auto));
 function show(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
- $('plans').style.display=v==='plans'?'block':'none';$('map').style.display=v==='map'?'block':'none';$('sb').style.display=v==='map'?'block':'none';$('fab').style.display=v==='plans'?'block':'none';
- if(v==='map'){if(!window.L){$('msg').style.display='block';$('msg').textContent='Map library failed to load. Check internet.';return}
+ $('plans').style.display=v==='plans'?'block':'none';$('map').style.display=v==='map'?'block':'none';$('sb').style.display=v==='map'?'block':'none';$('fab').style.display=v==='plans'?'flex':'none';
+ if(v==='map'){if(!window.L){toast('Map library failed to load. Check internet.');return}
   initMap();setTimeout(()=>{map.invalidateSize();drawMap(true)},50)}}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
 function edit(id){cur=T.find(t=>t.id===id)||{id:Date.now()+'',date:new Date().toISOString().slice(0,10),diff:'Moderate'};
  F.forEach(k=>{$(k).value=cur[k]??'';delete $(k).dataset.auto});$('st').textContent='';$('del').style.display=T.includes(cur)?'':'none';$('sheet').style.display='flex'}
 const closeSheet=()=>$('sheet').style.display='none';
 $('fab').onclick=()=>edit();
-$('plans').onclick=e=>{const r=e.target.closest('.row');if(r)edit(r.dataset.id)};
-$('cancel').onclick=closeSheet;$('sheet').onclick=e=>{if(e.target===$('sheet'))closeSheet()};
-document.onkeydown=e=>{if(e.key==='Escape')closeSheet()};
+$('plans').onclick=e=>{const r=e.target.closest('.card');if(r)edit(r.dataset.id)};
+$('cancel').onclick=closeSheet;$('sheet').onclick=e=>{if(e.target===$('sheet'))closeSheet()};$('f').querySelector('.grab').onclick=closeSheet;
+document.onkeydown=e=>{if(e.key==='Escape'){closeSheet();$('menu').style.display='none'}};
 $('del').onclick=()=>{if(confirm('Delete this trek?')){D[cur.id]=Date.now();T=T.filter(t=>t!==cur);save();render();closeSheet()}};
-$('pick').onclick=()=>{picking=true;closeSheet();show('map');$('msg').style.display='block';$('msg').textContent='Tap the map to pick the trek location.'};
+$('pick').onclick=()=>{picking=true;closeSheet();show('map');toast('Tap the map to pick the trek location.',0)};
 $('f').onsubmit=e=>{e.preventDefault();F.forEach(k=>{const v=$(k).value;cur[k]=NUM.includes(k)&&v!==''?+v:v});
  cur.mod=Date.now();if(!T.includes(cur))T.push(cur);save();render();closeSheet()};
 const hav=(a,b)=>{const r=Math.PI/180,x=(b.a-a.a)*r,y=(b.o-a.o)*r,h=Math.sin(x/2)**2+Math.cos(a.a*r)*Math.cos(b.a*r)*Math.sin(y/2)**2;return 12742*Math.asin(Math.sqrt(h))};
@@ -167,14 +217,16 @@ $('gpx').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)re
  if(mx>-1e9){$('alt').value=Math.round(mx);$('gain').value=Math.round(gain)}
  const n=d.querySelector('trk>name,metadata>name');if(n&&!$('name').value)$('name').value=n.textContent.trim();
  $('st').textContent='GPX imported: distance, gain and altitude set.';auto()};
+$('mn').onclick=e=>{e.stopPropagation();$('menu').style.display=$('menu').style.display==='block'?'none':'block'};
+document.addEventListener('click',()=>$('menu').style.display='none');
 $('exp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(T,null,1)],{type:'application/json'}));a.download='treks.json';a.click();ls('lastExport',Date.now());render()};
 $('imp').onclick=()=>$('file').click();
 $('file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
  try{const j=JSON.parse(await f.text());if(!Array.isArray(j)||j.some(t=>!t||!t.name||!/^\d{4}-\d{2}-\d{2}$/.test(t.date)))throw 0;
   if(!confirm(`Import ${j.length} treks? Matching ones are overwritten, others are kept.`))return;
   j.forEach(t=>{t.id=String(t.id||Date.now()+Math.random());t.mod=Date.now();const i=T.findIndex(x=>x.id===t.id);i<0?T.push(t):T[i]=t});save();render()}
- catch(x){alert('Invalid trek file.')}};
+ catch(x){toast('Invalid trek file.')}};
 $('cl').onclick=()=>{if(!ls('pass')){const p=prompt('Sync passphrase (same on every device)');if(!p)return;ls('pass',p)}sync()};
-$('cl').oncontextmenu=e=>{e.preventDefault();ls('pass','');alert('Passphrase cleared. Tap ☁ to set a new one.')};
+$('cl').oncontextmenu=e=>{e.preventDefault();ls('pass','');setSync('');toast('Passphrase cleared. Tap the cloud to set a new one.')};
 render();sync();
 </script></body></html>
