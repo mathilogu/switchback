@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -62,6 +61,19 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offs
 .pin{background:none;border:0}.pin svg{filter:drop-shadow(0 2px 5px rgba(0,0,0,.7))}
 .leaflet-control-layers,.leaflet-bar{border:0!important;border-radius:12px!important;box-shadow:var(--sh)!important;overflow:hidden}
 .leaflet-popup-content button{margin-top:6px;padding:6px 12px;border:0;border-radius:8px;background:#0E6A73;color:#fff}
+#cal{position:absolute;inset:0;overflow:auto;padding:10px 12px 40px;display:none}
+.mh{display:flex;align-items:center;justify-content:space-between;background:var(--ac);color:var(--on);border-radius:20px;padding:12px 8px;text-align:center}
+.mh .ic{background:none;border:0;color:var(--on)}.mh b{font-size:18px;display:block}.mh span{font-size:14px;opacity:.9}
+.g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.g .wd{text-align:center;font:600 12px var(--fm);color:var(--ink2);padding:4px 0}
+.d{position:relative;min-height:58px;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:4px 5px;text-align:center}
+.d.o{opacity:.4}.d.sun b{color:#D93A3A}.d b{font-size:17px;font-weight:600;display:block;margin-top:8px}
+.d i{position:absolute;top:3px;right:5px;font:500 10px var(--fm);color:var(--ink2);font-style:normal}
+.d .m{position:absolute;left:4px;top:3px;width:11px;height:11px;border-radius:50%;border:1.5px solid var(--ink)}.d .m.a{background:var(--ink)}
+.d.t{background:var(--ac);color:var(--on);border-color:var(--ac)}.d.t i{color:var(--on)}.d.t .m{border-color:var(--on)}.d.t .m.a{background:var(--on)}
+.d.now{outline:2px solid var(--ac);outline-offset:1px}
+.tn{font-size:9px;line-height:1.1;margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.lg{margin-top:12px;font-size:12px;color:var(--ink2)}
 </style></head><body>
 <svg width="0" height="0" style="position:absolute"><defs>
 <symbol id="i-peak" viewBox="0 0 24 24"><path d="M3 19l6.5-11 4 6 2-3L21 19z"/></symbol>
@@ -76,12 +88,12 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offs
 <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v4h4"/></symbol>
 </defs></svg>
 <header><div class="brand"><svg class="i"><use href="#i-peak"/></svg>Switchback</div>
-<div class="seg"><button class="tab on" data-v="plans">Plans</button><button class="tab" data-v="map">Map</button></div>
+<div class="seg"><button class="tab on" data-v="plans">Plans</button><button class="tab" data-v="cal">Calendar</button><button class="tab" data-v="map">Map</button></div>
 <button class="ic" id="cl" title="Sync (long-press to reset passphrase)"><svg class="i"><use href="#i-cloud"/></svg></button>
 <button class="ic" id="mn" title="More"><svg class="i"><use href="#i-dots"/></svg></button></header>
 <div id="menu"><button id="exp"><svg class="i"><use href="#i-down"/></svg>Export backup</button><button id="imp"><svg class="i"><use href="#i-up"/></svg>Import backup</button></div>
 <input type="file" id="file" accept=".json" hidden>
-<main><div id="plans"></div><div id="map"></div>
+<main><div id="plans"></div><div id="cal"></div><div id="map"></div>
 <div id="sb"><div class="bar"><button class="ic" id="go"><svg class="i"><use href="#i-search"/></svg></button><input id="q" placeholder="Search a place" enterkeyhint="search"><button class="ic" id="me" title="My location"><svg class="i"><use href="#i-locate"/></svg></button><button class="ic" id="ln" title="Route line"><svg class="i"><use href="#i-route"/></svg></button></div><div id="res"></div></div>
 <button id="fab"><svg class="i"><use href="#i-plus"/></svg>New trek</button></main>
 <div id="toast"></div>
@@ -189,8 +201,32 @@ async function geo(){const q=$('loc').value.trim();if(!q||$('lat').value!=='')re
  catch(x){$('st').textContent='Search failed. Enter coordinates manually.'}}
 $('loc').onchange=geo;$('lat').onchange=$('lng').onchange=auto;
 F.forEach(k=>$(k).addEventListener('input',()=>delete $(k).dataset.auto));
+
+const TM=['சித்திரை','வைகாசி','ஆனி','ஆடி','ஆவணி','புரட்டாசி','ஐப்பசி','கார்த்திகை','மார்கழி','தை','மாசி','பங்குனி'],
+ TMO=['அக்டோபர்','நவம்பர்'],MFULL=['ஜனவரி','பிப்ரவரி','மார்ச்','ஏப்ரல்','மே','ஜூன்','ஜூலை','ஆகஸ்ட்','செப்டம்பர்','அக்டோபர்','நவம்பர்','டிசம்பர்'],
+ WD=['ஞா','தி','செ','பு','வி','வெ','ச'];
+const RD=Math.PI/180,IST=19800000,jdn=ms=>ms/864e5+2440587.5,at=(y,m,d,h)=>Date.UTC(y,m,d,h)-IST;
+function sunL(ms){const d=jdn(ms)-2451545,g=(357.528+.9856003*d)*RD;const l=280.46+.9856474*d+1.915*Math.sin(g)+.02*Math.sin(2*g);return(((l-(23.857+(d/365.25)*.013972))%360)+360)%360}
+function elong(ms){const d=jdn(ms)-2451545,Lm=218.316+13.176396*d,M=(134.963+13.064993*d)*RD,Ms=(357.528+.9856003*d)*RD,D=((Lm-(280.46+.9856474*d))%360)*RD;
+ const l=Lm+6.289*Math.sin(M)+1.274*Math.sin(2*D-M)+.658*Math.sin(2*D)-.186*Math.sin(Ms)-.059*Math.sin(2*M-2*D)-.057*Math.sin(2*D-M+Ms)+.053*Math.sin(2*D+M);
+ const s=280.46+.9856474*d+1.915*Math.sin(Ms)+.02*Math.sin(2*Ms);return(((l-s)%360)+360)%360}
+const rashi=(y,m,d)=>Math.floor(sunL(at(y,m,d,18))/30),tith=(y,m,d,h)=>Math.floor(elong(at(y,m,d,h))/12);
+function tamil(y,m,d){const r=rashi(y,m,d);let n=1,x=new Date(Date.UTC(y,m,d));
+ for(let i=0;i<32;i++){x=new Date(x-864e5);if(rashi(x.getUTCFullYear(),x.getUTCMonth(),x.getUTCDate())!==r)break;n++}return{m:r,d:n}}
+let cy=new Date().getFullYear(),cm=new Date().getMonth();
+function drawCal(){const first=new Date(Date.UTC(cy,cm,1)),dim=new Date(Date.UTC(cy,cm+1,0)).getUTCDate(),off=first.getUTCDay(),dt=new Date(Date.UTC(cy,cm,1-off));
+ const a=tamil(cy,cm,1),b=tamil(cy,cm,dim),tn=new Date(),now=tn.getFullYear()+'-'+tn.getMonth()+'-'+tn.getDate(),by={};
+ T.forEach(t=>{(by[t.date]=by[t.date]||[]).push(t)});
+ let h=`<div class="mh"><button class="ic" id="pv">‹</button><div><b>${MFULL[cm]} - ${cy}</b><span>${TM[a.m]}${b.m!==a.m?' - '+TM[b.m]:''}</span></div><button class="ic" id="nx">›</button></div><div class="g">`+WD.map(w=>`<div class="wd">${w}</div>`).join('');
+ for(let i=0;i<42;i++){const y=dt.getUTCFullYear(),m=dt.getUTCMonth(),d=dt.getUTCDate(),k=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,tk=tamil(y,m,d),ts=by[k]||[],ama=tith(y,m,d,6)===29,pou=tith(y,m,d,18)===14;
+  if(i>=35&&m!==cm)break;
+  h+=`<div class="d${m!==cm?' o':''}${dt.getUTCDay()===0?' sun':''}${ts.length?' t':''}${y+'-'+m+'-'+d===now?' now':''}" ${ts.length?`data-id="${esc(ts[0].id)}" title="${esc(ts.map(t=>t.name).join(', '))}"`:''}>${ama?'<span class="m a"></span>':pou?'<span class="m"></span>':''}<i>${tk.d}</i><b>${d}</b>${ts.length?`<div class="tn">${esc(ts[0].name)}</div>`:''}</div>`;
+  dt.setUTCDate(d+1)}
+ $('cal').innerHTML=h+`</div><div class="lg">Small number = Tamil date. ● அமாவாசை ○ பௌர்ணமி. Colored cell = trek. Tamil dates and moon phases are calculated and may differ by a day from a printed panchangam.</div>`;
+ $('pv').onclick=()=>{cm--;if(cm<0){cm=11;cy--}drawCal()};$('nx').onclick=()=>{cm++;if(cm>11){cm=0;cy++}drawCal()}}
+$('cal').onclick=e=>{const r=e.target.closest('.d[data-id]');if(r)edit(r.dataset.id)};
 function show(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
- $('plans').style.display=v==='plans'?'block':'none';$('map').style.display=v==='map'?'block':'none';$('sb').style.display=v==='map'?'block':'none';$('fab').style.display=v==='plans'?'flex':'none';
+ $('plans').style.display=v==='plans'?'block':'none';$('cal').style.display=v==='cal'?'block':'none';if(v==='cal')drawCal();$('map').style.display=v==='map'?'block':'none';$('sb').style.display=v==='map'?'block':'none';$('fab').style.display=v==='plans'||v==='cal'?'flex':'none';
  if(v==='map'){if(!window.L){toast('Map library failed to load. Check internet.');return}
   initMap();setTimeout(()=>{map.invalidateSize();drawMap(true)},50)}}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
@@ -204,7 +240,7 @@ document.onkeydown=e=>{if(e.key==='Escape'){closeSheet();$('menu').style.display
 $('del').onclick=()=>{if(confirm('Delete this trek?')){D[cur.id]=Date.now();T=T.filter(t=>t!==cur);save();render();closeSheet()}};
 $('pick').onclick=()=>{picking=true;closeSheet();show('map');toast('Tap the map to pick the trek location.',0)};
 $('f').onsubmit=e=>{e.preventDefault();F.forEach(k=>{const v=$(k).value;cur[k]=NUM.includes(k)&&v!==''?+v:v});
- cur.mod=Date.now();if(!T.includes(cur))T.push(cur);save();render();closeSheet()};
+ cur.mod=Date.now();if(!T.includes(cur))T.push(cur);save();render();if($('cal').style.display==='block')drawCal();closeSheet()};
 const hav=(a,b)=>{const r=Math.PI/180,x=(b.a-a.a)*r,y=(b.o-a.o)*r,h=Math.sin(x/2)**2+Math.cos(a.a*r)*Math.cos(b.a*r)*Math.sin(y/2)**2;return 12742*Math.asin(Math.sqrt(h))};
 $('gpx').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
  const d=new DOMParser().parseFromString(await f.text(),'text/xml');
